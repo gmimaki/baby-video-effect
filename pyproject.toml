@@ -1,0 +1,29 @@
+[project]
+name = "baby-video-effect"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "gmimaki" }
+]
+dependencies = [
+    "numpy>=2.0.1",
+    "opencv-python>=4.10.0.84",
+    "picamera>=1.13",
+    "pygame>=2.6.0",
+]
+readme = "README.md"
+requires-python = ">= 3.8"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/baby_video_effect"]
