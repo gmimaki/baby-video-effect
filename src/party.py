@@ -7,6 +7,15 @@ import random
 def create_rainbow_colors():
     return [(255,0,0), (255,127,0), (255,255,0), (0,255,0), (0,0,255), (75,0,130), (143,0,255)]
 
+def increase_brightness(frame, value=30):
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    h, s, v = cv2.split(hsv)
+    v = cv2.add(v, value)
+    v = np.clip(v, 0, 255)
+    final_hsv = cv2.merge((h, s, v))
+    frame = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+    return frame
+
 def draw_rainbow(frame, y_pos, opacity=0.3):
     height, width = frame.shape[:2]
     colors = create_rainbow_colors()
@@ -38,12 +47,19 @@ def apply_bubble_effect(frame, frame_count):
     height, width = frame.shape[:2]
     bubble_layer = np.zeros_like(frame)
     
-    for _ in range(20):
-        x = int(width * (0.5 + 0.4 * np.sin(frame_count * 0.01 + _ * 0.5)))
-        y = int(height * (0.5 + 0.4 * np.cos(frame_count * 0.01 + _ * 0.5)))
+    for _ in range(10):
+        x = int(width * random.random())
+        y = int(height * random.random())
         radius = int(20 + 10 * np.sin(frame_count * 0.1 + _ * 0.5))
         color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
-        cv2.circle(bubble_layer, (x, y), radius, color, -1)
+        
+        # バブルのはじけるエフェクト
+        if frame_count % 50 > 45:
+            cv2.circle(bubble_layer, (x, y), radius, color, 2)
+            cv2.line(bubble_layer, (x - radius, y), (x + radius, y), color, 2)
+            cv2.line(bubble_layer, (x, y - radius), (x, y + radius), color, 2)
+        else:
+            cv2.circle(bubble_layer, (x, y), radius, color, -1)
     
     return cv2.addWeighted(frame, 0.7, bubble_layer, 0.3, 0)
 
@@ -63,6 +79,9 @@ def apply_sparkle_effect(frame, frame_count):
 
 def apply_baby_magic_mirror_effect(frame, frame_count):
     height, width = frame.shape[:2]
+    
+    # 明るさの調整
+    frame = increase_brightness(frame, value=30)
     
     # レインボーエフェクト（透明度を低くする）
     rainbow_y = int(height * (np.sin(frame_count * 0.05) * 0.5 + 0.5))
