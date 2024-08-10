@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from picamera2 import Picamera2
 import time
+import random
 
 def create_rainbow_colors():
     return [(255,0,0), (255,127,0), (255,255,0), (0,255,0), (0,0,255), (75,0,130), (143,0,255)]
@@ -15,8 +16,50 @@ def draw_rainbow(frame, y_pos):
         cv2.rectangle(frame, (0, y), (width, y + bar_height), color, -1)
     return cv2.addWeighted(frame, 0.7, frame, 0.3, 0)
 
+def apply_kaleidoscope(frame, frame_count):
+    height, width = frame.shape[:2]
+    center_x, center_y = width // 2, height // 2
+    angle = frame_count * 0.1
+    scale = 1 + 0.1 * np.sin(frame_count * 0.05)
+    
+    segments = 8
+    for i in range(segments):
+        rot = cv2.getRotationMatrix2D((center_x, center_y), angle + i * (360 / segments), scale)
+        rot_frame = cv2.warpAffine(frame, rot, (width, height))
+        mask = np.zeros((height, width), dtype=np.uint8)
+        cv2.ellipse(mask, (center_x, center_y), (width, height), 0, i * (360 / segments), (i + 1) * (360 / segments), 255, -1)
+        frame = cv2.bitwise_and(frame, frame, mask=cv2.bitwise_not(mask))
+        frame += cv2.bitwise_and(rot_frame, rot_frame, mask=mask)
+    
+    return frame
+
+def apply_bubble_effect(frame, frame_count):
+    height, width = frame.shape[:2]
+    bubble_layer = np.zeros_like(frame)
+    
+    for _ in range(20):
+        x = int(width * (0.5 + 0.4 * np.sin(frame_count * 0.01 + _ * 0.5)))
+        y = int(height * (0.5 + 0.4 * np.cos(frame_count * 0.01 + _ * 0.5)))
+        radius = int(20 + 10 * np.sin(frame_count * 0.1 + _ * 0.5))
+        color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
+        cv2.circle(bubble_layer, (x, y), radius, color, -1)
+    
+    return cv2.addWeighted(frame, 0.7, bubble_layer, 0.3, 0)
+
 def apply_party_effect(frame, frame_count):
     height, width = frame.shape[:2]
+    
+    # カラーシフト効果
+    b, g, r = cv2.split(frame)
+    b = np.roll(b, int(10 * np.sin(frame_count * 0.1)), axis=1)
+    r = np.roll(r, int(10 * np.cos(frame_count * 0.1)), axis=0)
+    frame = cv2.merge([b, g, r])
+    
+    # 万華鏡効果
+    frame = apply_kaleidoscope(frame, frame_count)
+    
+    # バブルエフェクト
+    frame = apply_bubble_effect(frame, frame_count)
     
     # 虹色のオーバーレイ
     rainbow_y = int(height * (np.sin(frame_count * 0.05) * 0.5 + 0.5))
