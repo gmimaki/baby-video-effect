@@ -5,7 +5,7 @@ from picamera import PiCamera
 import time
 import random
 import pygame
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 # Pygameの初期化（音声用）
 pygame.mixer.init()
@@ -40,6 +40,7 @@ class AnimatedObject:
             self.sound.play()
 
     def draw(self, frame: np.ndarray) -> None:
+        # shapeの要素は次の通り
         h, w = self.image.shape[:2]
         if self.x + w > frame.shape[1] or self.y + h > frame.shape[0]:
             return
