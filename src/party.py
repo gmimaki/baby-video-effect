@@ -17,6 +17,23 @@ def draw_rainbow(frame, y_pos, opacity=0.3):
         cv2.rectangle(rainbow_layer, (0, y), (width, y + bar_height), color, -1)
     return cv2.addWeighted(frame, 1 - opacity, rainbow_layer, opacity, 0)
 
+def apply_kaleidoscope(frame, frame_count):
+    height, width = frame.shape[:2]
+    center_x, center_y = width // 2, height // 2
+    angle = frame_count * 0.1
+    scale = 1 + 0.1 * np.sin(frame_count * 0.05)
+    
+    segments = 8
+    kaleidoscope_layer = np.zeros_like(frame)
+    for i in range(segments):
+        rot = cv2.getRotationMatrix2D((center_x, center_y), angle + i * (360 / segments), scale)
+        rot_frame = cv2.warpAffine(frame, rot, (width, height))
+        mask = np.zeros((height, width), dtype=np.uint8)
+        cv2.ellipse(mask, (center_x, center_y), (width, height), 0, i * (360 / segments), (i + 1) * (360 / segments), 255, -1)
+        kaleidoscope_layer = cv2.add(kaleidoscope_layer, cv2.bitwise_and(rot_frame, rot_frame, mask=mask))
+    
+    return cv2.addWeighted(frame, 0.7, kaleidoscope_layer, 0.3, 0)
+
 def apply_bubble_effect(frame, frame_count):
     height, width = frame.shape[:2]
     bubble_layer = np.zeros_like(frame)
@@ -44,59 +61,26 @@ def apply_sparkle_effect(frame, frame_count):
     
     return cv2.addWeighted(frame, 1, sparkle_layer, 0.3, 0)
 
-def apply_mosaic_effect(frame, block_size=10):
-    height, width = frame.shape[:2]
-    mosaic_frame = cv2.resize(frame, (width // block_size, height // block_size), interpolation=cv2.INTER_LINEAR)
-    mosaic_frame = cv2.resize(mosaic_frame, (width, height), interpolation=cv2.INTER_NEAREST)
-    return mosaic_frame
-
-def apply_swirl_effect(frame, frame_count):
-    height, width = frame.shape[:2]
-    swirl_layer = np.zeros_like(frame)
-    center_x, center_y = width // 2, height // 2
-    max_radius = np.sqrt(center_x**2 + center_y**2)
-    
-    for y in range(height):
-        for x in range(width):
-            offset_x = x - center_x
-            offset_y = y - center_y
-            radius = np.sqrt(offset_x**2 + offset_y**2)
-            theta = np.arctan2(offset_y, offset_x) + (frame_count * 0.02) * (max_radius - radius) / max_radius
-            new_x = int(center_x + radius * np.cos(theta))
-            new_y = int(center_y + radius * np.sin(theta))
-            
-            if 0 <= new_x < width and 0 <= new_y < height:
-                swirl_layer[y, x] = frame[new_y, new_x]
-            else:
-                swirl_layer[y, x] = 0
-    
-    return cv2.addWeighted(frame, 0.5, swirl_layer, 0.5, 0)
-
 def apply_baby_magic_mirror_effect(frame, frame_count):
     height, width = frame.shape[:2]
     
-    # 画面全体の明るさを調整
-    frame = cv2.convertScaleAbs(frame, alpha=1.2, beta=30)  # alphaはコントラスト、betaは明るさを調整
-    
-    # レインボー、バブル、キラキラのエフェクトを適用
+    # レインボーエフェクト（透明度を低くする）
     rainbow_y = int(height * (np.sin(frame_count * 0.05) * 0.5 + 0.5))
     frame = draw_rainbow(frame, rainbow_y, opacity=0.2)
+    
+    # バブルエフェクト
     frame = apply_bubble_effect(frame, frame_count)
+    
+    # キラキラエフェクト
     frame = apply_sparkle_effect(frame, frame_count)
     
-    # 時間経過によるエフェクト切り替え
-    effect_selector = (frame_count // 1000) % 3
+    # パルス効果（透明度を低くする）
+    pulse = np.sin(frame_count * 0.1) * 15 + 15  # 振幅を半分に
+    overlay = np.full(frame.shape, (0, 255, 255), dtype=np.uint8)
+    frame = cv2.addWeighted(frame, 1, overlay, pulse / 255 * 0.2, 0)  # 透明度を0.2倍に
     
-    if effect_selector == 0:
-        # モザイクエフェクト
-        frame = apply_mosaic_effect(frame, block_size=20)
-    elif effect_selector == 1:
-        # スワールエフェクト
-        frame = apply_swirl_effect(frame, frame_count)
-    # 既存のエフェクト（何も追加しない）
-
     # テキストアニメーション
-    text = "Party Time!"
+    text = "Peek-a-boo!"
     font = cv2.FONT_HERSHEY_SIMPLEX
     text_size = cv2.getTextSize(text, font, 1, 2)[0]
     text_x = int((width - text_size[0]) / 2)
