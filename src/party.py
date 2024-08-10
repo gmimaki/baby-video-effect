@@ -80,7 +80,7 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
     frame = cv2.addWeighted(frame, 1, overlay, pulse / 255 * 0.2, 0)  # 透明度を0.2倍に
     
     # テキストアニメーション
-    text = "Peek-a-boo!"
+    text = "Party Time!"
     font = cv2.FONT_HERSHEY_SIMPLEX
     text_size = cv2.getTextSize(text, font, 1, 2)[0]
     text_x = int((width - text_size[0]) / 2)
