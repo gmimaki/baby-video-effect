@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-from picamera.array import PiRGBArray
-from picamera import PiCamera
+from picamera2 import Picamera2
 import time
 
 def create_rainbow_colors():
@@ -49,41 +48,42 @@ def apply_party_effect(frame, frame_count):
     text_size = cv2.getTextSize(text, font, 1, 2)[0]
     text_x = int((width - text_size[0]) / 2)
     text_y = int(height / 2 + text_size[1] / 2)
-    color = (255 * np.sin(frame_count * 0.1)**2, 
-             255 * np.sin(frame_count * 0.1 + np.pi/3)**2, 
-             255 * np.sin(frame_count * 0.1 + 2*np.pi/3)**2)
+    color = (int(255 * np.sin(frame_count * 0.1)**2), 
+             int(255 * np.sin(frame_count * 0.1 + np.pi/3)**2), 
+             int(255 * np.sin(frame_count * 0.1 + 2*np.pi/3)**2))
     cv2.putText(frame, text, (text_x, text_y), font, 1, color, 2, cv2.LINE_AA)
     
     return frame
 
 # カメラの初期化
-camera = PiCamera()
-camera.resolution = (640, 480)
-camera.framerate = 32
-rawCapture = PiRGBArray(camera, size=(640, 480))
-
-# カメラのウォームアップ
-time.sleep(0.1)
+picam2 = Picamera2()
+config = picam2.create_preview_configuration(main={"format": 'RGB888', "size": (640, 480)})
+picam2.configure(config)
+picam2.start()
 
 # メインループ
 frame_count = 0
-for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-    image = frame.array
-    
-    # パーティーエフェクトを適用
-    party_image = apply_party_effect(image, frame_count)
-    
-    # 結果を表示
-    cv2.imshow("Baby Party Cam", party_image)
-    
-    # キャプチャをクリア
-    rawCapture.truncate(0)
-    
-    # フレームカウントを更新
-    frame_count += 1
-    
-    # 'q'キーで終了
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+try:
+    while True:
+        # フレームの取得
+        frame = picam2.capture_array()
+        
+        # BGR形式に変換（OpenCVはBGR形式を使用）
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        
+        # パーティーエフェクトを適用
+        party_image = apply_party_effect(frame, frame_count)
+        
+        # 結果を表示
+        cv2.imshow("Baby Party Cam", party_image)
+        
+        # フレームカウントを更新
+        frame_count += 1
+        
+        # 'q'キーで終了
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-cv2.destroyAllWindows()
+finally:
+    cv2.destroyAllWindows()
+    picam2.stop()

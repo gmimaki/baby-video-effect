@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-from picamera.array import PiRGBArray
-from picamera import PiCamera
+from picamera2 import Picamera2
 import time
 import random
 import pygame
@@ -40,7 +39,6 @@ class AnimatedObject:
             self.sound.play()
 
     def draw(self, frame: np.ndarray) -> None:
-        # shapeの要素は次の通り
         h, w = self.image.shape[:2]
         if self.x + w > frame.shape[1] or self.y + h > frame.shape[0]:
             return
@@ -152,23 +150,20 @@ def add_baby_effects(frame: np.ndarray, objects: List[AnimatedObject], rainbow: 
     return frame
 
 def main() -> None:
-    # カメラの初期化
-    camera: PiCamera = PiCamera()
-    camera.resolution = (1920, 1080)
-    camera.framerate = 32
-    rawCapture: PiRGBArray = PiRGBArray(camera, size=(1920, 1080))
-
-    # カメラのウォームアップ時間
-    time.sleep(0.1)
+    # Picamera2の初期化
+    picam2 = Picamera2()
+    config = picam2.create_preview_configuration(main={"format": 'RGB888', "size": (1920, 1080)})
+    picam2.configure(config)
+    picam2.start()
 
     # アニメーションオブジェクトの初期化
     objects: List[AnimatedObject] = [
-        AnimatedObject('path_to_star.png', random.randint(0, 639), random.randint(0, 479), random.randint(1, 3), random.randint(1, 3), sound_star),
-        AnimatedObject('path_to_sun.png', random.randint(0, 639), random.randint(0, 479), random.randint(1, 2), random.randint(1, 2), sound_sun),
-        AnimatedObject('path_to_butterfly.png', random.randint(0, 639), random.randint(0, 479), random.randint(2, 4), random.randint(2, 4), sound_butterfly),
-        AnimatedObject('path_to_fish.png', random.randint(0, 639), random.randint(0, 479), random.randint(3, 5), random.randint(3, 5), sound_fish),
-        AnimatedObject('path_to_turtle.png', random.randint(0, 639), random.randint(0, 479), random.randint(1, 2), random.randint(1, 2), sound_turtle),
-        AnimatedObject('path_to_dog.png', random.randint(0, 639), random.randint(0, 479), random.randint(4, 6), random.randint(4, 6), sound_dog),
+        AnimatedObject('path_to_star.png', random.randint(0, 1919), random.randint(0, 1079), random.randint(1, 3), random.randint(1, 3), sound_star),
+        AnimatedObject('path_to_sun.png', random.randint(0, 1919), random.randint(0, 1079), random.randint(1, 2), random.randint(1, 2), sound_sun),
+        AnimatedObject('path_to_butterfly.png', random.randint(0, 1919), random.randint(0, 1079), random.randint(2, 4), random.randint(2, 4), sound_butterfly),
+        AnimatedObject('path_to_fish.png', random.randint(0, 1919), random.randint(0, 1079), random.randint(3, 5), random.randint(3, 5), sound_fish),
+        AnimatedObject('path_to_turtle.png', random.randint(0, 1919), random.randint(0, 1079), random.randint(1, 2), random.randint(1, 2), sound_turtle),
+        AnimatedObject('path_to_dog.png', random.randint(0, 1919), random.randint(0, 1079), random.randint(4, 6), random.randint(4, 6), sound_dog),
     ]
 
     # 虹とツバメの初期化
@@ -181,37 +176,40 @@ def main() -> None:
     rainbow_interval: float = 30.0  # 虹が現れる間隔（秒）
     swallow_interval: float = 45.0  # ツバメが現れる間隔（秒）
 
-    # メインループ
-    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-        image: np.ndarray = frame.array
+    try:
+        while True:
+            # フレームの取得
+            image = picam2.capture_array()
 
-        # 虹の出現チェック
-        current_time: float = time.time()
-        if current_time - last_rainbow_time > rainbow_interval and not rainbow.active:
-            rainbow.activate()
-            last_rainbow_time = current_time
+            # BGR形式に変換（OpenCVはBGR形式を使用）
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        # ツバメの出現チェック
-        if current_time - last_swallow_time > swallow_interval and not swallow.active:
-            swallow.activate(image.shape[0])
-            last_swallow_time = current_time
+            # 虹の出現チェック
+            current_time: float = time.time()
+            if current_time - last_rainbow_time > rainbow_interval and not rainbow.active:
+                rainbow.activate()
+                last_rainbow_time = current_time
 
-        # エフェクトを適用
-        output: np.ndarray = add_baby_effects(image, objects, rainbow, swallow)
+            # ツバメの出現チェック
+            if current_time - last_swallow_time > swallow_interval and not swallow.active:
+                swallow.activate(image.shape[0])
+                last_swallow_time = current_time
 
-        # 結果を表示
-        cv2.imshow("Baby Camera", output)
+            # エフェクトを適用
+            output: np.ndarray = add_baby_effects(image, objects, rainbow, swallow)
 
-        # キャプチャをクリア
-        rawCapture.truncate(0)
+            # 結果を表示
+            cv2.imshow("Baby Camera", output)
 
-        # 'q'キーが押されたらループを抜ける
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            # 'q'キーが押されたらループを抜ける
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
-    # クリーンアップ
-    cv2.destroyAllWindows()
-    pygame.quit()
+    finally:
+        # クリーンアップ
+        cv2.destroyAllWindows()
+        picam2.stop()
+        pygame.quit()
 
 if __name__ == "__main__":
     main()
