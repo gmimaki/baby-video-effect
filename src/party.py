@@ -7,15 +7,6 @@ import random
 def create_rainbow_colors():
     return [(255,0,0), (255,127,0), (255,255,0), (0,255,0), (0,0,255), (75,0,130), (143,0,255)]
 
-def increase_brightness(frame, value=30):
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    h, s, v = cv2.split(hsv)
-    v = cv2.add(v, value)
-    v = np.clip(v, 0, 255)
-    final_hsv = cv2.merge((h, s, v))
-    frame = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
-    return frame
-
 def draw_rainbow(frame, y_pos, opacity=0.3):
     height, width = frame.shape[:2]
     colors = create_rainbow_colors()
@@ -47,19 +38,12 @@ def apply_bubble_effect(frame, frame_count):
     height, width = frame.shape[:2]
     bubble_layer = np.zeros_like(frame)
     
-    for _ in range(10):
-        x = int(width * random.random())
-        y = int(height * random.random())
+    for _ in range(20):
+        x = int(width * (0.5 + 0.4 * np.sin(frame_count * 0.01 + _ * 0.5)))
+        y = int(height * (0.5 + 0.4 * np.cos(frame_count * 0.01 + _ * 0.5)))
         radius = int(20 + 10 * np.sin(frame_count * 0.1 + _ * 0.5))
         color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
-        
-        # バブルのはじけるエフェクト
-        if frame_count % 50 > 45:
-            cv2.circle(bubble_layer, (x, y), radius, color, 2)
-            cv2.line(bubble_layer, (x - radius, y), (x + radius, y), color, 2)
-            cv2.line(bubble_layer, (x, y - radius), (x, y + radius), color, 2)
-        else:
-            cv2.circle(bubble_layer, (x, y), radius, color, -1)
+        cv2.circle(bubble_layer, (x, y), radius, color, -1)
     
     return cv2.addWeighted(frame, 0.7, bubble_layer, 0.3, 0)
 
@@ -77,11 +61,32 @@ def apply_sparkle_effect(frame, frame_count):
     
     return cv2.addWeighted(frame, 1, sparkle_layer, 0.3, 0)
 
+def apply_star_twinkle_effect(frame, frame_count):
+    height, width = frame.shape[:2]
+    star_layer = np.zeros_like(frame)
+    
+    for _ in range(30):
+        x = np.random.randint(0, width)
+        y = np.random.randint(0, height)
+        size = np.random.randint(10, 20)
+        color = (255, 255, np.random.randint(200, 255))
+        
+        # 星の形を作成
+        for i in range(5):
+            pt1 = (int(x + size * np.cos(2 * np.pi * i / 5)), 
+                   int(y + size * np.sin(2 * np.pi * i / 5)))
+            pt2 = (int(x + size * np.cos(2 * np.pi * (i + 2) / 5)), 
+                   int(y + size * np.sin(2 * np.pi * (i + 2) / 5)))
+            cv2.line(star_layer, pt1, pt2, color, 2)
+        
+        # 点滅効果
+        if frame_count % 30 > 15:
+            cv2.circle(star_layer, (x, y), size // 4, color, -1)
+    
+    return cv2.addWeighted(frame, 1, star_layer, 0.5, 0)
+
 def apply_baby_magic_mirror_effect(frame, frame_count):
     height, width = frame.shape[:2]
-    
-    # 明るさの調整
-    frame = increase_brightness(frame, value=30)
     
     # レインボーエフェクト（透明度を低くする）
     rainbow_y = int(height * (np.sin(frame_count * 0.05) * 0.5 + 0.5))
@@ -92,6 +97,9 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
     
     # キラキラエフェクト
     frame = apply_sparkle_effect(frame, frame_count)
+
+    # 星のキラキラエフェクト
+    frame = apply_star_twinkle_effect(frame, frame_count)
     
     # パルス効果（透明度を低くする）
     pulse = np.sin(frame_count * 0.1) * 15 + 15  # 振幅を半分に
