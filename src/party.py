@@ -129,7 +129,7 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
 
 # カメラの初期化
 picam2 = Picamera2()
-config = picam2.create_preview_configuration(main={"format": 'RGB888', "size": (1280, 960)})
+config = picam2.create_preview_configuration(main={"format": 'RGB888', "size": (1920, 1080)})
 picam2.configure(config)
 picam2.start()
 
