@@ -25,10 +25,15 @@ def apply_bubble_effect(frame, frame_count):
         x = int(width * (0.5 + 0.4 * np.sin(frame_count * 0.01 + _ * 0.5)))
         y = int(height * (0.5 + 0.4 * np.cos(frame_count * 0.01 + _ * 0.5)))
         radius = int(20 + 10 * np.sin(frame_count * 0.1 + _ * 0.5))
-        color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
+        
+        # より鮮やかでサイケデリックな色を生成
+        hue = (frame_count * 2 + _ * 30) % 180  # HSVのHue値を0-179の範囲で変化させる
+        color = cv2.cvtColor(np.uint8([[[hue, 255, 255]]]), cv2.COLOR_HSV2BGR)[0][0]
+        color = tuple(map(int, color))  # BGRに変換し、intのtupleに変換
+        
         cv2.circle(bubble_layer, (x, y), radius, color, -1)
     
-    return cv2.add(bubble_layer, frame)  # 透明度を取り除く
+    return cv2.add(bubble_layer, frame)
 
 def apply_sparkle_effect(frame, frame_count):
     height, width = frame.shape[:2]
@@ -98,14 +103,22 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
     scale = beat * vibrate
     
     font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = 1 * scale
-    text_size = cv2.getTextSize(text, font, font_scale, 2)[0]
+    font_scale = 2.5 * scale  # フォントサイズを大きく
+    thickness = 4  # 文字の太さを増加
+    
+    text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
     text_x = int((width - text_size[0]) / 2)
     text_y = int(height / 2 + text_size[1] / 2)
+    
+    # 文字の縁取り（アウトライン）を追加
+    outline_color = (0, 0, 0)  # 黒色
+    cv2.putText(frame, text, (text_x, text_y), font, font_scale, outline_color, thickness * 3, cv2.LINE_AA)
+    
+    # メインの文字色
     color = (int(255 * np.sin(frame_count * 0.1)**2), 
              int(255 * np.sin(frame_count * 0.1 + np.pi/3)**2), 
              int(255 * np.sin(frame_count * 0.1 + 2*np.pi/3)**2))
-    cv2.putText(frame, text, (text_x, text_y), font, font_scale, color, 2, cv2.LINE_AA)
+    cv2.putText(frame, text, (text_x, text_y), font, font_scale, color, thickness, cv2.LINE_AA)
     
     return frame
 
