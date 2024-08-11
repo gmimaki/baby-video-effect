@@ -118,6 +118,7 @@ picam2.start()
 # ウィンドウを作成して全画面表示モードに設定
 cv2.namedWindow("Baby Magic Mirror", cv2.WND_PROP_FULLSCREEN)
 cv2.setWindowProperty("Baby Magic Mirror", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+picam2.set_controls({"AwbEnable": False, "AwbGain": [1.5, 1.5], "ExposureValue": 2.0})  # 適宜調整
 
 # メインループ
 frame_count = 0
