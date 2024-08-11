@@ -1,12 +1,13 @@
 import cv2
 import numpy as np
+from picamera2 import Picamera2
 import time
 import random
 
 def create_rainbow_colors():
     return [(255,0,0), (255,127,0), (255,255,0), (0,255,0), (0,0,255), (75,0,130), (143,0,255)]
 
-def draw_rainbow(frame, y_pos, opacity=0.2):
+def draw_rainbow(frame, y_pos, opacity=0.2):  # 透明度をさらに低く
     height, width = frame.shape[:2]
     colors = create_rainbow_colors()
     bar_height = height // len(colors)
@@ -27,7 +28,7 @@ def apply_bubble_effect(frame, frame_count):
         color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
         cv2.circle(bubble_layer, (x, y), radius, color, -1)
     
-    return cv2.add(bubble_layer, frame)
+    return cv2.add(bubble_layer, frame)  # 透明度を取り除く
 
 def apply_sparkle_effect(frame, frame_count):
     height, width = frame.shape[:2]
@@ -40,7 +41,7 @@ def apply_sparkle_effect(frame, frame_count):
         color = (255, 255, 255)
         cv2.circle(sparkle_layer, (x, y), size, color, -1)
     
-    return cv2.add(sparkle_layer, frame)
+    return cv2.add(sparkle_layer, frame)  # 透明度を取り除く
 
 def apply_star_twinkle_effect(frame, frame_count):
     height, width = frame.shape[:2]
@@ -62,11 +63,14 @@ def apply_star_twinkle_effect(frame, frame_count):
         if frame_count % 30 > 15:
             cv2.circle(star_layer, (x, y), size // 4, color, -1)
     
-    return cv2.add(star_layer, frame)
+    return cv2.add(star_layer, frame)  # 透明度を取り除く
 
 def apply_baby_magic_mirror_effect(frame, frame_count):
     height, width = frame.shape[:2]
     
+    # フレーム全体の明るさを調整
+    frame = cv2.convertScaleAbs(frame, alpha=1.5, beta=30)  # 明るさを増幅
+
     # レインボーエフェクト
     rainbow_y = int(height * (np.sin(frame_count * 0.05) * 0.5 + 0.5))
     frame = draw_rainbow(frame, rainbow_y, opacity=0.2)
@@ -79,6 +83,11 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
 
     # 星のキラキラエフェクト
     frame = apply_star_twinkle_effect(frame, frame_count)
+    
+    # パルス効果を一時的に取り除く
+    #pulse = np.sin(frame_count * 0.1) * 15 + 15
+    #overlay = np.full(frame.shape, (0, 255, 255), dtype=np.uint8)
+    #frame = cv2.addWeighted(frame, 1, overlay, pulse / 255 * 0.1, 0)
     
     # テキストアニメーション
     texts = ["Party Time!", "Make Some Noise!"]
@@ -100,6 +109,12 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
     
     return frame
 
+# カメラの初期化
+picam2 = Picamera2()
+config = picam2.create_preview_configuration(main={"format": 'RGB888', "size": (1920, 1080)})
+picam2.configure(config)
+picam2.start()
+
 # ウィンドウを作成して全画面表示モードに設定
 cv2.namedWindow("Baby Magic Mirror", cv2.WND_PROP_FULLSCREEN)
 cv2.setWindowProperty("Baby Magic Mirror", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
@@ -108,8 +123,11 @@ cv2.setWindowProperty("Baby Magic Mirror", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_F
 frame_count = 0
 try:
     while True:
-        # 背景フレームの作成（白い背景）
-        frame = np.ones((1080, 1920, 3), dtype=np.uint8) * 255
+        # フレームの取得
+        frame = picam2.capture_array()
+        
+        # BGR形式に変換（OpenCVはBGR形式を使用）
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         
         # ベビーマジックミラーエフェクトを適用
         magic_mirror_frame = apply_baby_magic_mirror_effect(frame, frame_count)
@@ -124,8 +142,6 @@ try:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-        # フレームレートを制御（約30FPS）
-        time.sleep(1/30)
-
 finally:
     cv2.destroyAllWindows()
+    picam2.stop()
