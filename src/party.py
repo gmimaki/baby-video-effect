@@ -85,9 +85,9 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
     frame = apply_star_twinkle_effect(frame, frame_count)
     
     # パルス効果を一時的に取り除く
-    #pulse = np.sin(frame_count * 0.1) * 15 + 15
-    #overlay = np.full(frame.shape, (0, 255, 255), dtype=np.uint8)
-    #frame = cv2.addWeighted(frame, 1, overlay, pulse / 255 * 0.1, 0)
+    pulse = np.sin(frame_count * 0.1) * 15 + 15
+    overlay = np.full(frame.shape, (0, 255, 255), dtype=np.uint8)
+    frame = cv2.addWeighted(frame, 1, overlay, pulse / 255 * 0.1, 0)
     
     # テキストアニメーション
     texts = ["Party Time!", "Make Some Noise!"]
@@ -111,7 +111,7 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
 
 # カメラの初期化
 picam2 = Picamera2()
-config = picam2.create_preview_configuration(main={"format": 'RGB888', "size": (1920, 1080)})
+config = picam2.create_preview_configuration(main={"size": (1920, 1080)})
 picam2.configure(config)
 picam2.start()
 
