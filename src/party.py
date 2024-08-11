@@ -69,7 +69,7 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
     height, width = frame.shape[:2]
     
     # フレーム全体の明るさを調整
-    frame = cv2.convertScaleAbs(frame, alpha=1.5, beta=30)  # 明るさを増幅
+    frame = cv2.convertScaleAbs(frame, alpha=1.5, beta=20)  # 明るさを増幅
 
     # レインボーエフェクト
     rainbow_y = int(height * (np.sin(frame_count * 0.05) * 0.5 + 0.5))
