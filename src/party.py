@@ -133,6 +133,10 @@ config = picam2.create_preview_configuration(main={"format": 'RGB888', "size": (
 picam2.configure(config)
 picam2.start()
 
+# ウィンドウを作成して全画面表示モードに設定
+cv2.namedWindow("Baby Magic Mirror", cv2.WND_PROP_FULLSCREEN)
+cv2.setWindowProperty("Baby Magic Mirror", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
 # メインループ
 frame_count = 0
 try:
