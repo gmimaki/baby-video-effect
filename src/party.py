@@ -24,7 +24,8 @@ def apply_bubble_effect(frame, frame_count):
     for _ in range(20):
         x = int(width * (0.5 + 0.4 * np.sin(frame_count * 0.01 + _ * 0.5)))
         y = int(height * (0.5 + 0.4 * np.cos(frame_count * 0.01 + _ * 0.5)))
-        radius = int(20 + 10 * np.sin(frame_count * 0.1 + _ * 0.5))
+        # バブルの基本サイズを40に、変動幅を20に増加
+        radius = int(40 + 20 * np.sin(frame_count * 0.1 + _ * 0.5))
         
         # より鮮やかでサイケデリックな色を生成
         hue = (frame_count * 2 + _ * 30) % 180  # HSVのHue値を0-179の範囲で変化させる
