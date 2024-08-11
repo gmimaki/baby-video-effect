@@ -28,7 +28,7 @@ def apply_bubble_effect(frame, frame_count):
         color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
         cv2.circle(bubble_layer, (x, y), radius, color, -1)
     
-    return cv2.addWeighted(frame, 0.8, bubble_layer, 0.2, 0)  # エフェクトの透明度を上げる
+    return cv2.add(bubble_layer, frame)  # 透明度を取り除く
 
 def apply_sparkle_effect(frame, frame_count):
     height, width = frame.shape[:2]
@@ -39,10 +39,9 @@ def apply_sparkle_effect(frame, frame_count):
         y = np.random.randint(0, height)
         size = np.random.randint(2, 5)
         color = (255, 255, 255)
-        alpha = np.random.rand() * 0.3 + 0.7  # ランダムに透明度を上げる
         cv2.circle(sparkle_layer, (x, y), size, color, -1)
     
-    return cv2.addWeighted(frame, 0.9, sparkle_layer, 0.1, 0)  # エフェクトの透明度を上げる
+    return cv2.add(sparkle_layer, frame)  # 透明度を取り除く
 
 def apply_star_twinkle_effect(frame, frame_count):
     height, width = frame.shape[:2]
@@ -64,7 +63,7 @@ def apply_star_twinkle_effect(frame, frame_count):
         if frame_count % 30 > 15:
             cv2.circle(star_layer, (x, y), size // 4, color, -1)
     
-    return cv2.addWeighted(frame, 0.9, star_layer, 0.1, 0)  # エフェクトの透明度を上げる
+    return cv2.add(star_layer, frame)  # 透明度を取り除く
 
 def apply_baby_magic_mirror_effect(frame, frame_count):
     height, width = frame.shape[:2]
@@ -85,10 +84,10 @@ def apply_baby_magic_mirror_effect(frame, frame_count):
     # 星のキラキラエフェクト
     frame = apply_star_twinkle_effect(frame, frame_count)
     
-    # パルス効果
-    pulse = np.sin(frame_count * 0.1) * 15 + 15
-    overlay = np.full(frame.shape, (0, 255, 255), dtype=np.uint8)
-    frame = cv2.addWeighted(frame, 1, overlay, pulse / 255 * 0.1, 0)  # パルス効果の透明度を上げる
+    # パルス効果を一時的に取り除く
+    #pulse = np.sin(frame_count * 0.1) * 15 + 15
+    #overlay = np.full(frame.shape, (0, 255, 255), dtype=np.uint8)
+    #frame = cv2.addWeighted(frame, 1, overlay, pulse / 255 * 0.1, 0)
     
     # テキストアニメーション
     texts = ["Party Time!", "Make Some Noise!"]
