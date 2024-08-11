@@ -71,7 +71,6 @@ def apply_star_twinkle_effect(frame, frame_count):
         size = np.random.randint(10, 20)
         color = (255, 255, np.random.randint(200, 255))
         
-        # 星の形を作成
         for i in range(5):
             pt1 = (int(x + size * np.cos(2 * np.pi * i / 5)), 
                    int(y + size * np.sin(2 * np.pi * i / 5)))
@@ -79,75 +78,74 @@ def apply_star_twinkle_effect(frame, frame_count):
                    int(y + size * np.sin(2 * np.pi * (i + 2) / 5)))
             cv2.line(star_layer, pt1, pt2, color, 2)
         
-        # 点滅効果
         if frame_count % 30 > 15:
             cv2.circle(star_layer, (x, y), size // 4, color, -1)
     
     return cv2.addWeighted(frame, 1, star_layer, 0.5, 0)
 
-def apply_baby_magic_mirror_effect(frame, frame_count):
+def apply_text_animation(frame, frame_count):
     height, width = frame.shape[:2]
-    
-    # レインボーエフェクト（透明度を低くする）
-    rainbow_y = int(height * (np.sin(frame_count * 0.05) * 0.5 + 0.5))
-    frame = draw_rainbow(frame, rainbow_y, opacity=0.2)
-    
-    # バブルエフェクト
-    frame = apply_bubble_effect(frame, frame_count)
-    
-    # キラキラエフェクト
-    frame = apply_sparkle_effect(frame, frame_count)
 
-    # 星のキラキラエフェクト
-    frame = apply_star_twinkle_effect(frame, frame_count)
-    
-    # パルス効果（透明度を低くする）
-    pulse = np.sin(frame_count * 0.1) * 15 + 15  # 振幅を半分に
-    overlay = np.full(frame.shape, (0, 255, 255), dtype=np.uint8)
-    frame = cv2.addWeighted(frame, 1, overlay, pulse / 255 * 0.2, 0)  # 透明度を0.2倍に
-    
-    # テキストアニメーション
-    text = "Party Time!"
+    # 一定時間ごとにテキストを切り替える
+    if (frame_count // 100) % 2 == 0:
+        text = "Party Time!"
+    else:
+        text = "Make Some Noise!"
+
     font = cv2.FONT_HERSHEY_SIMPLEX
-    text_size = cv2.getTextSize(text, font, 1, 2)[0]
-    text_x = int((width - text_size[0]) / 2)
-    text_y = int(height / 2 + text_size[1] / 2)
+
+    # テキストサイズを膨らませたり縮めたりする
+    scale = 1 + 0.5 * np.sin(frame_count * 0.1)
+    
+    # ビートに合わせて振動するような効果
+    jitter_x = int(5 * np.sin(frame_count * 0.3))
+    jitter_y = int(5 * np.cos(frame_count * 0.3))
+
+    text_size = cv2.getTextSize(text, font, scale, 2)[0]
+    text_x = int((width - text_size[0]) / 2) + jitter_x
+    text_y = int(height / 2 + text_size[1] / 2) + jitter_y
+
     color = (int(255 * np.sin(frame_count * 0.1)**2), 
              int(255 * np.sin(frame_count * 0.1 + np.pi/3)**2), 
              int(255 * np.sin(frame_count * 0.1 + 2*np.pi/3)**2))
-    cv2.putText(frame, text, (text_x, text_y), font, 1, color, 2, cv2.LINE_AA)
+    
+    cv2.putText(frame, text, (text_x, text_y), font, scale, color, 2, cv2.LINE_AA)
     
     return frame
 
-# カメラの初期化
+def apply_baby_magic_mirror_effect(frame, frame_count):
+    height, width = frame.shape[:2]
+    
+    rainbow_y = int(height * (np.sin(frame_count * 0.05) * 0.5 + 0.5))
+    frame = draw_rainbow(frame, rainbow_y, opacity=0.2)
+    frame = apply_bubble_effect(frame, frame_count)
+    frame = apply_sparkle_effect(frame, frame_count)
+    frame = apply_star_twinkle_effect(frame, frame_count)
+
+    pulse = np.sin(frame_count * 0.1) * 15 + 15
+    overlay = np.full(frame.shape, (0, 255, 255), dtype=np.uint8)
+    frame = cv2.addWeighted(frame, 1, overlay, pulse / 255 * 0.2, 0)
+
+    # テキストアニメーションを適用
+    frame = apply_text_animation(frame, frame_count)
+    
+    return frame
+
 picam2 = Picamera2()
 config = picam2.create_preview_configuration(main={"format": 'RGB888', "size": (1280, 960)})
 picam2.configure(config)
 picam2.start()
 
-# メインループ
 frame_count = 0
 try:
     while True:
-        # フレームの取得
         frame = picam2.capture_array()
-        
-        # BGR形式に変換（OpenCVはBGR形式を使用）
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        
-        # ベビーマジックミラーエフェクトを適用
         magic_mirror_frame = apply_baby_magic_mirror_effect(frame, frame_count)
-        
-        # 結果を表示
         cv2.imshow("Baby Magic Mirror", magic_mirror_frame)
-        
-        # フレームカウントを更新
         frame_count += 1
-        
-        # 'q'キーで終了
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
 finally:
     cv2.destroyAllWindows()
     picam2.stop()
